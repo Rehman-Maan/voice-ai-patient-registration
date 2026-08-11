@@ -6,9 +6,10 @@ A deployable take-home assessment implementation that registers synthetic patien
 
 ## Live demo
 
-- **Phone:** `TO BE ADDED AFTER VAPI PROVISIONING`
-- **API base URL:** `TO BE ADDED AFTER DEPLOYMENT`
-- **API documentation:** `{API_BASE_URL}/docs`
+- **Phone:** `+1 (732) 825-8211`
+- **API base URL:** `https://voice-ai-patient-registration-production-70b4.up.railway.app`
+- **API documentation:** `https://voice-ai-patient-registration-production-70b4.up.railway.app/docs`
+- **Health check:** `https://voice-ai-patient-registration-production-70b4.up.railway.app/health`
 
 ## Architecture
 
@@ -137,4 +138,3 @@ Railway is the recommended path:
 - Unicode personal names are not yet supported by the conservative assessment validator.
 - Add Vapi-native signature verification when the selected account/tool API exposes its exact signing format.
 - Add persisted call sessions/transcripts, Spanish conversation tests, a read-only dashboard, and mock scheduling only after the core call path is stable.
-
