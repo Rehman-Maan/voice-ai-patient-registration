@@ -45,3 +45,21 @@ def test_vapi_errors_still_return_200_with_tool_error(client):
     assert response.status_code == 200
     assert response.json()["results"][0]["toolCallId"] == "tool-error"
     assert "error" in response.json()["results"][0]
+
+
+def test_voice_tools_accept_vapi_bearer_credential(client):
+    response = client.post(
+        "/voice/tools/vapi",
+        headers={"Authorization": "Bearer test-secret"},
+        json={
+            "message": {
+                "type": "tool-calls",
+                "call": {"id": "bearer-call"},
+                "toolCallList": [
+                    {"id": "bearer-tool", "name": "find_patient_by_phone", "arguments": {"phone_number": "2025550147"}}
+                ],
+            }
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["results"][0]["toolCallId"] == "bearer-tool"

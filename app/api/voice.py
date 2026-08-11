@@ -16,9 +16,14 @@ from app.validation.demographics import normalize_phone
 router = APIRouter(prefix="/voice", tags=["voice-tools"])
 
 
-def authorize(x_vapi_secret: str | None = Header(default=None)) -> None:
+def authorize(
+    x_vapi_secret: str | None = Header(default=None),
+    authorization: str | None = Header(default=None),
+) -> None:
     expected = get_settings().vapi_webhook_secret
-    if expected and (not x_vapi_secret or not secrets.compare_digest(x_vapi_secret, expected)):
+    bearer_secret = authorization.removeprefix("Bearer ").strip() if authorization and authorization.startswith("Bearer ") else None
+    supplied = x_vapi_secret or bearer_secret
+    if expected and (not supplied or not secrets.compare_digest(supplied, expected)):
         raise HTTPException(status_code=401, detail="Invalid voice webhook credentials")
 
 
