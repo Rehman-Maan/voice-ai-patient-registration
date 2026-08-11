@@ -1,0 +1,49 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "find_patient_by_phone",
+      "description": "Look for existing, non-deleted patient records after the caller supplies a valid U.S. phone number.",
+      "parameters": {
+        "type": "object",
+        "properties": {"phone_number": {"type": "string"}},
+        "required": ["phone_number"]
+      }
+    },
+    "server": {"url": "{{APP_BASE_URL}}/voice/tools/find-patient"}
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_patient",
+      "description": "Save a new patient only after a complete read-back and explicit caller authorization.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "call_id": {"type": "string"},
+          "patient": {"type": "object", "additionalProperties": true}
+        },
+        "required": ["call_id", "patient"]
+      }
+    },
+    "server": {"url": "{{APP_BASE_URL}}/voice/tools/create-patient"}
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_patient",
+      "description": "Update an existing patient only after the caller identifies the record and explicitly confirms the changes.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "call_id": {"type": "string"},
+          "patient_id": {"type": "string", "format": "uuid"},
+          "changes": {"type": "object", "additionalProperties": true}
+        },
+        "required": ["call_id", "patient_id", "changes"]
+      }
+    },
+    "server": {"url": "{{APP_BASE_URL}}/voice/tools/update-patient"}
+  }
+]
+
