@@ -43,3 +43,9 @@ def test_idempotent_create(client, patient_payload):
     assert first.json()["data"]["patient_id"] == second.json()["data"]["patient_id"]
     assert len(client.get("/patients").json()["data"]) == 1
 
+
+def test_root_guides_reviewers(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "online"
+    assert response.json()["data"]["documentation"] == "/docs"

@@ -85,3 +85,18 @@ def health():
     with engine.connect() as connection:
         connection.execute(text("SELECT 1"))
     return {"data": {"status": "ok", "database": "connected"}, "error": None}
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return {
+        "data": {
+            "service": settings.app_name,
+            "status": "online",
+            "documentation": "/docs",
+            "health": "/health",
+            "patients": "/patients",
+            "notice": "Technical assessment demo. Use fictional patient information only.",
+        },
+        "error": None,
+    }
