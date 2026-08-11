@@ -17,7 +17,8 @@ def _engine_kwargs(url: str) -> dict:
 
 
 settings = get_settings()
-engine = create_engine(settings.database_url, **_engine_kwargs(settings.database_url))
+database_url = settings.sqlalchemy_database_url
+engine = create_engine(database_url, **_engine_kwargs(database_url))
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
@@ -27,4 +28,3 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
-

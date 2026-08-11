@@ -3,6 +3,7 @@ from datetime import date, timedelta
 import pytest
 
 from app.validation.demographics import normalize_phone, normalize_state, validate_dob, validate_name, validate_zip
+from app.config import Settings
 
 
 def test_normalizers():
@@ -22,3 +23,7 @@ def test_future_dob():
     with pytest.raises(ValueError):
         validate_dob(date.today() + timedelta(days=1))
 
+
+def test_platform_postgres_url_uses_psycopg3():
+    settings = Settings(database_url="postgresql://user:pass@db:5432/app")
+    assert settings.sqlalchemy_database_url == "postgresql+psycopg://user:pass@db:5432/app"

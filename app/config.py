@@ -17,8 +17,16 @@ class Settings(BaseSettings):
     def origins(self) -> list[str]:
         return [value.strip() for value in self.allowed_origins.split(",") if value.strip()]
 
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        """Use Psycopg 3 when a platform supplies a generic PostgreSQL URL."""
+        if self.database_url.startswith("postgresql://"):
+            return self.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        if self.database_url.startswith("postgres://"):
+            return self.database_url.replace("postgres://", "postgresql+psycopg://", 1)
+        return self.database_url
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
