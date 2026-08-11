@@ -63,3 +63,29 @@ def test_voice_tools_accept_vapi_bearer_credential(client):
     )
     assert response.status_code == 200
     assert response.json()["results"][0]["toolCallId"] == "bearer-tool"
+
+
+def test_vapi_nested_function_arguments_are_supported(client):
+    response = client.post(
+        "/voice/tools/vapi",
+        headers={"Authorization": "Bearer test-secret"},
+        json={
+            "message": {
+                "type": "tool-calls",
+                "call": {"id": "nested-call"},
+                "toolCallList": [
+                    {
+                        "id": "nested-tool",
+                        "function": {
+                            "name": "find_patient_by_phone",
+                            "arguments": '{"phone_number":"202-555-0186"}',
+                        },
+                    }
+                ],
+            }
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()["results"][0]
+    assert result["toolCallId"] == "nested-tool"
+    assert '"found":false' in result["result"]

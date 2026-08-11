@@ -43,7 +43,14 @@ class VoiceUpdate(BaseModel):
 
 
 def _tool_arguments(tool_call: dict[str, Any]) -> dict[str, Any]:
-    arguments = tool_call.get("arguments", tool_call.get("parameters", {}))
+    function = tool_call.get("function") or {}
+    arguments = tool_call.get("arguments")
+    if arguments is None:
+        arguments = tool_call.get("parameters")
+    if arguments is None:
+        arguments = function.get("arguments")
+    if arguments is None:
+        arguments = function.get("parameters", {})
     if isinstance(arguments, str):
         return json.loads(arguments)
     return arguments or {}
