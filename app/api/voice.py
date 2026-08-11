@@ -59,6 +59,33 @@ def _tool_arguments(tool_call: dict[str, Any]) -> dict[str, Any]:
 @router.post("/tools/vapi", dependencies=[Depends(authorize)])
 def vapi_tool_dispatch(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any]:
     """Handle Vapi's tool-calls envelope and return its required results envelope."""
+    # Vapi's dashboard tester posts raw schema parameters, while live calls use
+    # the tool-calls envelope. Supporting both makes pre-call verification safe.
+    if "message" not in payload:
+        if set(payload) == {"phone_number"}:
+            phone = normalize_phone(str(payload["phone_number"]))
+            matches = service.list_patients(db, phone_number=phone)
+            return {
+                "found": bool(matches),
+                "matches": [
+                    {"patient_id": str(p.patient_id), "first_name": p.first_name, "last_name": p.last_name}
+                    for p in matches
+                ],
+            }
+        if "patient_id" in payload and "changes" in payload:
+            patient = service.update_patient(
+                db,
+                UUID(str(payload["patient_id"])),
+                PatientUpdate.model_validate(payload["changes"]),
+            )
+            return {"success": True, "patient_id": str(patient.patient_id)}
+        patient = service.create_patient(
+            db,
+            PatientCreate.model_validate(payload.get("patient", payload)),
+            idempotency_key=payload.get("idempotency_key"),
+        )
+        return {"success": True, "patient_id": str(patient.patient_id)}
+
     message = payload.get("message", {})
     tool_calls = message.get("toolCallList", [])
     call_id = str(message.get("call", {}).get("id", "unknown-call"))

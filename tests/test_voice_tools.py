@@ -89,3 +89,13 @@ def test_vapi_nested_function_arguments_are_supported(client):
     result = response.json()["results"][0]
     assert result["toolCallId"] == "nested-tool"
     assert '"found":false' in result["result"]
+
+
+def test_vapi_dashboard_raw_lookup_body(client):
+    response = client.post(
+        "/voice/tools/vapi",
+        headers={"Authorization": "Bearer test-secret"},
+        json={"phone_number": "202-555-0186"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"found": False, "matches": []}
