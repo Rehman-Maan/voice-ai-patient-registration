@@ -1,4 +1,5 @@
 import secrets
+import json
 from typing import Any
 from uuid import UUID
 
@@ -36,6 +37,69 @@ class VoiceUpdate(BaseModel):
     changes: PatientUpdate
 
 
+def _tool_arguments(tool_call: dict[str, Any]) -> dict[str, Any]:
+    arguments = tool_call.get("arguments", tool_call.get("parameters", {}))
+    if isinstance(arguments, str):
+        return json.loads(arguments)
+    return arguments or {}
+
+
+@router.post("/tools/vapi", dependencies=[Depends(authorize)])
+def vapi_tool_dispatch(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Handle Vapi's tool-calls envelope and return its required results envelope."""
+    message = payload.get("message", {})
+    tool_calls = message.get("toolCallList", [])
+    call_id = str(message.get("call", {}).get("id", "unknown-call"))
+    results: list[dict[str, str]] = []
+
+    for tool_call in tool_calls:
+        tool_call_id = str(tool_call.get("id", "unknown-tool-call"))
+        name = tool_call.get("name") or tool_call.get("function", {}).get("name")
+        try:
+            arguments = _tool_arguments(tool_call)
+            if name == "find_patient_by_phone":
+                phone = normalize_phone(arguments["phone_number"])
+                matches = service.list_patients(db, phone_number=phone)
+                output = {
+                    "found": bool(matches),
+                    "matches": [
+                        {"patient_id": str(p.patient_id), "first_name": p.first_name, "last_name": p.last_name}
+                        for p in matches
+                    ],
+                }
+            elif name == "create_patient":
+                patient_payload = arguments.get("patient", arguments)
+                patient = service.create_patient(
+                    db,
+                    PatientCreate.model_validate(patient_payload),
+                    idempotency_key=f"vapi:{call_id}:create",
+                )
+                output = {
+                    "success": True,
+                    "message": f"Patient registration saved for {patient.first_name} {patient.last_name}.",
+                    "patient_id": str(patient.patient_id),
+                }
+            elif name == "update_patient":
+                patient = service.update_patient(
+                    db,
+                    UUID(str(arguments["patient_id"])),
+                    PatientUpdate.model_validate(arguments.get("changes", {})),
+                )
+                output = {
+                    "success": True,
+                    "message": f"Patient information updated for {patient.first_name} {patient.last_name}.",
+                    "patient_id": str(patient.patient_id),
+                }
+            else:
+                raise ValueError(f"Unknown tool: {name}")
+            results.append({"toolCallId": tool_call_id, "result": json.dumps(output, separators=(",", ":"))})
+        except Exception as exc:
+            db.rollback()
+            results.append({"toolCallId": tool_call_id, "error": f"Tool failed: {str(exc)}"})
+
+    return {"results": results}
+
+
 @router.post("/tools/find-patient", dependencies=[Depends(authorize)])
 def find_patient(payload: PhoneLookup, db: Session = Depends(get_db)) -> dict[str, Any]:
     matches = service.list_patients(db, phone_number=normalize_phone(payload.phone_number))
@@ -66,4 +130,3 @@ def voice_update(payload: VoiceUpdate, db: Session = Depends(get_db)) -> dict[st
         "message": f"Patient information updated for {patient.first_name} {patient.last_name}.",
         "patient": PatientRead.model_validate(patient),
     }
-
