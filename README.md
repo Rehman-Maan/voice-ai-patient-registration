@@ -60,7 +60,7 @@ Open `http://localhost:8000/docs` and `http://localhost:8000/health`.
 | Variable | Required | Purpose |
 |---|---:|---|
 | `DATABASE_URL` | Deployment | SQLAlchemy URL; use `postgresql+psycopg://...` for PostgreSQL |
-| `VAPI_WEBHOOK_SECRET` | Live voice | Shared secret expected in `X-Vapi-Secret` |
+| `VAPI_WEBHOOK_SECRET` | Live voice | Shared secret accepted through `X-Vapi-Secret` or a Bearer credential |
 | `APP_ENV` | No | Environment name |
 | `LOG_LEVEL` | No | Python log level, default `INFO` |
 | `ALLOWED_ORIGINS` | No | Comma-separated dashboard origins |
@@ -103,12 +103,12 @@ The manual call matrix is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). A
 1. Deploy the backend over HTTPS and set a long random `VAPI_WEBHOOK_SECRET`.
 2. Create a Vapi assistant using the full prompt in `app/prompts/patient_intake.md`.
 3. Create the three functions in `vapi/tool-definitions.json`, replacing `{{APP_BASE_URL}}`.
-4. Configure every tool request to send `X-Vapi-Secret` with the same secret.
+4. Create a Vapi Bearer Token credential containing the same value as `VAPI_WEBHOOK_SECRET` and assign it to every custom tool.
 5. Use a low-latency tool-capable model, English transcriber, and natural voice. Enable interruptions/barge-in.
 6. Attach a provisioned U.S. number to the assistant.
 7. Call with synthetic data, inspect tool logs, and confirm the record through `GET /patients`.
 
-The write tools intentionally require a `call_id`. Creation derives an idempotency key from it, so a repeated tool request cannot create a duplicate row.
+Live Vapi calls provide their call ID in the tool-call envelope. Creation derives an idempotency key from it, so a repeated tool request cannot create a duplicate row.
 
 ## Deployment
 
@@ -120,7 +120,7 @@ Railway is the recommended path:
 4. Set `VAPI_WEBHOOK_SECRET` and deploy. The Docker command runs `alembic upgrade head` before Uvicorn.
 5. Run `APP_BASE_URL=https://... python scripts/smoke_test.py`.
 6. Configure Vapi tools and place an external test call.
-7. Replace the placeholders in **Live demo** before submission.
+7. Verify the live health endpoint, complete a synthetic registration by phone, and retrieve it through the public API.
 
 ## Design decisions and trade-offs
 
@@ -133,7 +133,7 @@ Railway is the recommended path:
 
 ## Known limitations / next steps
 
-- Live URL and number require the candidate's Railway/Vapi accounts and billing-enabled number provisioning.
+- The live Vapi number is inbound-only under the assessment account.
 - Full state-name-to-abbreviation conversion is left to the agent prompt; the API deliberately accepts only canonical two-letter codes.
 - Unicode personal names are not yet supported by the conservative assessment validator.
 - Add Vapi-native signature verification when the selected account/tool API exposes its exact signing format.
